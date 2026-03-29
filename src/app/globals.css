@@ -1,8 +1,12 @@
 @import "tailwindcss";
 
 :root {
-  --background: #e2e8f0;
-  --foreground: #0f172a;
+  --background: #0f2f57;
+  --foreground: #f1f6ff;
+  --glass-bg: rgba(23, 44, 79, 0.42);
+  --glass-border: rgba(181, 214, 255, 0.32);
+  --glass-shadow: 0 20px 45px rgba(4, 12, 24, 0.35);
+  --muted: rgba(229, 240, 255, 0.8);
 }
 
 @theme inline {
@@ -15,7 +19,333 @@
 body {
   min-height: 100vh;
   margin: 0;
-  background: radial-gradient(circle at top, #c7e9ff 0%, var(--background) 38%, #dbeafe 100%);
+  background: radial-gradient(circle at 18% 5%, #63b4ff 0%, #2a6fbe 30%, var(--background) 70%);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "SF Pro Text",
+    "SF Pro Display",
+    "Segoe UI",
+    var(--font-geist-sans),
+    sans-serif;
+}
+
+.weather-screen {
+  position: relative;
+  margin: 0 auto;
+  width: min(860px, 100%);
+  padding: 18px 14px 28px;
+  display: grid;
+  gap: 14px;
+  overflow: hidden;
+}
+
+.weather-aurora {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(36px);
+  pointer-events: none;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+.weather-aurora-top {
+  width: 260px;
+  height: 260px;
+  top: -80px;
+  right: -55px;
+  background: radial-gradient(circle, rgba(162, 221, 255, 0.95) 0%, rgba(37, 126, 203, 0.3) 70%);
+}
+
+.weather-aurora-bottom {
+  width: 230px;
+  height: 230px;
+  bottom: 80px;
+  left: -80px;
+  background: radial-gradient(circle, rgba(132, 182, 255, 0.8) 0%, rgba(52, 93, 182, 0.22) 72%);
+}
+
+.glass-card {
+  position: relative;
+  z-index: 1;
+  border-radius: 24px;
+  border: 1px solid var(--glass-border);
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.14), var(--glass-bg));
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(18px) saturate(128%);
+}
+
+.search-card {
+  padding: 10px 12px;
+}
+
+.search-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.search-row input {
+  flex: 1;
+  height: 40px;
+  border-radius: 13px;
+  border: 1px solid rgba(177, 211, 251, 0.38);
+  background: rgba(8, 22, 44, 0.32);
+  color: #f4f8ff;
+  font-size: 15px;
+  padding: 0 14px;
+  outline: none;
+}
+
+.search-row input::placeholder {
+  color: rgba(224, 237, 255, 0.65);
+}
+
+.search-row button {
+  border: 0;
+  border-radius: 12px;
+  height: 40px;
+  padding: 0 14px;
+  color: #0f2241;
+  font-weight: 600;
+  background: linear-gradient(180deg, #ecf7ff 0%, #bedfff 100%);
+}
+
+.search-row button:disabled {
+  opacity: 0.6;
+}
+
+.search-icon {
+  font-size: 19px;
+  opacity: 0.9;
+}
+
+.hero-panel {
+  text-align: center;
+  padding: 26px 16px 22px;
+}
+
+.hero-city {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 500;
+}
+
+.hero-temp {
+  margin: 2px 0;
+  font-size: 90px;
+  line-height: 1;
+  font-weight: 200;
+  letter-spacing: -2px;
+}
+
+.hero-condition {
+  margin: 0;
+  font-size: 19px;
+  color: var(--muted);
+}
+
+.hero-range {
+  margin-top: 7px;
+  font-size: 16px;
+  font-weight: 500;
+  color: rgba(236, 244, 255, 0.95);
+}
+
+.panel {
+  padding: 14px 12px;
+}
+
+.panel h2 {
+  margin: 2px 6px 10px;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  font-weight: 600;
+  color: rgba(209, 230, 255, 0.85);
+}
+
+.hourly-scroll {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(68px, 1fr);
+  gap: 9px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+}
+
+.hourly-item {
+  text-align: center;
+  border-radius: 15px;
+  padding: 10px 6px;
+  border: 1px solid rgba(175, 214, 255, 0.24);
+  background: rgba(11, 29, 56, 0.36);
+}
+
+.hourly-item p {
+  margin: 0;
+}
+
+.hourly-item .hourly-icon {
+  font-size: 20px;
+  margin: 5px 0;
+}
+
+.hourly-item .hourly-temp {
+  font-size: 17px;
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.hourly-item .rain {
+  font-size: 11px;
+  color: #8fd9ff;
+}
+
+.hourly-item .rain-hidden {
+  color: rgba(220, 235, 255, 0.42);
+}
+
+.daily-list {
+  display: grid;
+  gap: 8px;
+}
+
+.daily-row {
+  display: grid;
+  grid-template-columns: 62px 28px 42px 34px 1fr 36px;
+  gap: 8px;
+  align-items: center;
+  padding: 6px 2px;
+  border-bottom: 1px solid rgba(169, 205, 243, 0.16);
+}
+
+.daily-row:last-child {
+  border-bottom: none;
+}
+
+.daily-day,
+.daily-low,
+.daily-high,
+.daily-rain {
+  margin: 0;
+  font-size: 14px;
+}
+
+.daily-day {
+  font-weight: 600;
+}
+
+.daily-rain {
+  color: #8fd9ff;
+  text-align: right;
+  font-size: 12px;
+}
+
+.daily-icon {
+  margin: 0;
+  text-align: center;
+}
+
+.daily-low,
+.daily-high {
+  color: rgba(227, 238, 252, 0.9);
+}
+
+.daily-bar-track {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(205, 229, 255, 0.22);
+  overflow: hidden;
+}
+
+.daily-bar-range {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #74d8ff 0%, #ffe58a 100%);
+}
+
+.details-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.detail-tile {
+  padding: 14px 12px;
+}
+
+.detail-tile p {
+  margin: 0;
+}
+
+.detail-label {
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: rgba(205, 229, 255, 0.78);
+}
+
+.detail-value {
+  margin-top: 8px;
+  font-size: 29px;
+  line-height: 1;
+  font-weight: 500;
+}
+
+.detail-helper {
+  margin-top: 6px;
+  font-size: 13px;
+  color: rgba(221, 236, 255, 0.9);
+}
+
+.city-chip-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(120px, 1fr);
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px 2px;
+}
+
+.city-chip {
+  border: 1px solid rgba(178, 213, 250, 0.32);
+  border-radius: 14px;
+  background: rgba(11, 31, 59, 0.45);
+  color: #eef5ff;
+  min-height: 48px;
+  padding: 8px 10px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 14px;
+}
+
+@media (min-width: 840px) {
+  .weather-screen {
+    padding: 28px 20px 42px;
+    gap: 16px;
+  }
+
+  .hero-panel {
+    padding: 34px 16px 28px;
+  }
+
+  .hero-city {
+    font-size: 42px;
+  }
+
+  .hero-temp {
+    font-size: 106px;
+  }
+
+  .details-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }

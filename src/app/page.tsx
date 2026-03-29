@@ -2,266 +2,232 @@
 
 import { FormEvent, useMemo, useState } from "react";
 
-type WeatherCode = number;
-
-type GeocodeResponse = {
-  results?: Array<{
-    id: number;
-    name: string;
-    latitude: number;
-    longitude: number;
-    admin1?: string;
-    country: string;
-    timezone: string;
-  }>;
+type Hourly = { hour: string; icon: string; temp: number; rain?: number };
+type Daily = { day: string; icon: string; low: number; high: number; rain: number };
+type Detail = { label: string; value: string; helper: string };
+type CityWeather = {
+  city: string;
+  condition: string;
+  temp: number;
+  high: number;
+  low: number;
+  hourly: Hourly[];
+  daily: Daily[];
+  details: Detail[];
 };
 
-type ForecastResponse = {
-  current: {
-    temperature_2m: number;
-    relative_humidity_2m: number;
-    apparent_temperature: number;
-    weather_code: WeatherCode;
-    wind_speed_10m: number;
-  };
-  daily: {
-    time: string[];
-    weather_code: WeatherCode[];
-    temperature_2m_max: number[];
-    temperature_2m_min: number[];
-    precipitation_probability_max: number[];
-  };
+const MOCK_WEATHER: Record<string, CityWeather> = {
+  chicago: {
+    city: "Chicago",
+    condition: "Partly Cloudy",
+    temp: 63,
+    high: 68,
+    low: 54,
+    hourly: [
+      { hour: "Now", icon: "⛅", temp: 63 },
+      { hour: "3 PM", icon: "☀️", temp: 65 },
+      { hour: "4 PM", icon: "☀️", temp: 66 },
+      { hour: "5 PM", icon: "⛅", temp: 64 },
+      { hour: "6 PM", icon: "🌥️", temp: 62 },
+      { hour: "7 PM", icon: "🌧️", temp: 59, rain: 35 },
+      { hour: "8 PM", icon: "🌧️", temp: 58, rain: 40 },
+      { hour: "9 PM", icon: "☁️", temp: 57 },
+    ],
+    daily: [
+      { day: "Today", icon: "⛅", low: 54, high: 68, rain: 35 },
+      { day: "Sun", icon: "🌤️", low: 56, high: 71, rain: 15 },
+      { day: "Mon", icon: "☀️", low: 58, high: 73, rain: 5 },
+      { day: "Tue", icon: "🌦️", low: 55, high: 69, rain: 40 },
+      { day: "Wed", icon: "🌧️", low: 52, high: 63, rain: 65 },
+      { day: "Thu", icon: "☁️", low: 50, high: 61, rain: 20 },
+      { day: "Fri", icon: "🌤️", low: 53, high: 67, rain: 10 },
+      { day: "Sat", icon: "☀️", low: 57, high: 72, rain: 0 },
+      { day: "Sun", icon: "🌧️", low: 55, high: 66, rain: 55 },
+      { day: "Mon", icon: "⛅", low: 54, high: 68, rain: 25 },
+    ],
+    details: [
+      { label: "UV INDEX", value: "4", helper: "Moderate" },
+      { label: "WIND", value: "14 mph", helper: "WNW" },
+      { label: "HUMIDITY", value: "61%", helper: "Dew point 49°" },
+      { label: "VISIBILITY", value: "9 mi", helper: "Clear" },
+    ],
+  },
+  seattle: {
+    city: "Seattle",
+    condition: "Rain",
+    temp: 52,
+    high: 57,
+    low: 46,
+    hourly: [
+      { hour: "Now", icon: "🌧️", temp: 52, rain: 80 },
+      { hour: "3 PM", icon: "🌧️", temp: 52, rain: 80 },
+      { hour: "4 PM", icon: "🌦️", temp: 51, rain: 65 },
+      { hour: "5 PM", icon: "🌦️", temp: 50, rain: 60 },
+      { hour: "6 PM", icon: "☁️", temp: 49, rain: 30 },
+      { hour: "7 PM", icon: "☁️", temp: 48, rain: 20 },
+      { hour: "8 PM", icon: "🌧️", temp: 48, rain: 55 },
+      { hour: "9 PM", icon: "🌧️", temp: 47, rain: 60 },
+    ],
+    daily: Array.from({ length: 10 }, (_, i) => ({
+      day: ["Today", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"][i] ?? `Day ${i + 1}`,
+      icon: i % 2 === 0 ? "🌧️" : "☁️",
+      low: 44 + (i % 3),
+      high: 54 + (i % 5),
+      rain: 45 + ((i * 7) % 40),
+    })),
+    details: [
+      { label: "UV INDEX", value: "1", helper: "Low" },
+      { label: "WIND", value: "9 mph", helper: "SSE" },
+      { label: "HUMIDITY", value: "84%", helper: "Very Humid" },
+      { label: "VISIBILITY", value: "5 mi", helper: "Mist" },
+    ],
+  },
+  austin: {
+    city: "Austin",
+    condition: "Sunny",
+    temp: 81,
+    high: 89,
+    low: 68,
+    hourly: [
+      { hour: "Now", icon: "☀️", temp: 81 },
+      { hour: "3 PM", icon: "☀️", temp: 84 },
+      { hour: "4 PM", icon: "☀️", temp: 86 },
+      { hour: "5 PM", icon: "☀️", temp: 87 },
+      { hour: "6 PM", icon: "🌤️", temp: 85 },
+      { hour: "7 PM", icon: "🌤️", temp: 82 },
+      { hour: "8 PM", icon: "🌙", temp: 79 },
+      { hour: "9 PM", icon: "🌙", temp: 76 },
+    ],
+    daily: Array.from({ length: 10 }, (_, i) => ({
+      day: ["Today", "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun", "Mon"][i] ?? `Day ${i + 1}`,
+      icon: i % 4 === 0 ? "⛅" : "☀️",
+      low: 67 + (i % 4),
+      high: 87 + (i % 5),
+      rain: i % 4 === 0 ? 20 : 5,
+    })),
+    details: [
+      { label: "UV INDEX", value: "9", helper: "Very High" },
+      { label: "WIND", value: "12 mph", helper: "SE" },
+      { label: "HUMIDITY", value: "43%", helper: "Comfortable" },
+      { label: "VISIBILITY", value: "10 mi", helper: "Excellent" },
+    ],
+  },
 };
 
-type Location = {
-  displayName: string;
-  latitude: number;
-  longitude: number;
-  timezone: string;
-};
+const DEFAULT_CITY_KEY = "chicago";
 
-type ForecastDay = {
-  date: string;
-  weatherCode: WeatherCode;
-  maxTemp: number;
-  minTemp: number;
-  precipitationChance: number;
-};
-
-type WeatherData = {
-  location: Location;
-  current: ForecastResponse["current"];
-  daily: ForecastDay[];
-};
-
-function getWeatherLabel(code: WeatherCode): string {
-  if (code === 0) return "Clear";
-  if ([1, 2, 3].includes(code)) return "Partly cloudy";
-  if ([45, 48].includes(code)) return "Fog";
-  if ([51, 53, 55, 56, 57].includes(code)) return "Drizzle";
-  if ([61, 63, 65, 66, 67].includes(code)) return "Rain";
-  if ([71, 73, 75, 77].includes(code)) return "Snow";
-  if ([80, 81, 82].includes(code)) return "Rain showers";
-  if ([85, 86].includes(code)) return "Snow showers";
-  if ([95, 96, 99].includes(code)) return "Thunderstorm";
-  return "Unknown";
-}
-
-function formatWeekday(dateString: string): string {
-  const date = new Date(`${dateString}T00:00:00`);
-  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
-}
-
-async function fetchWeatherByCity(city: string): Promise<WeatherData> {
-  const geocodeParams = new URLSearchParams({
-    name: city,
-    count: "1",
-    language: "en",
-    format: "json",
-  });
-
-  const geocodeResponse = await fetch(
-    `https://geocoding-api.open-meteo.com/v1/search?${geocodeParams.toString()}`,
-  );
-
-  if (!geocodeResponse.ok) {
-    throw new Error("Unable to geocode city right now.");
-  }
-
-  const geocodeData = (await geocodeResponse.json()) as GeocodeResponse;
-  const match = geocodeData.results?.[0];
-
-  if (!match) {
-    throw new Error("No city found for that search.");
-  }
-
-  const forecastParams = new URLSearchParams({
-    latitude: String(match.latitude),
-    longitude: String(match.longitude),
-    current: "temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m",
-    daily: "weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max",
-    timezone: "auto",
-    temperature_unit: "fahrenheit",
-    wind_speed_unit: "mph",
-  });
-
-  const forecastResponse = await fetch(`https://api.open-meteo.com/v1/forecast?${forecastParams.toString()}`);
-  if (!forecastResponse.ok) {
-    throw new Error("Unable to load forecast right now.");
-  }
-
-  const forecast = (await forecastResponse.json()) as ForecastResponse;
-  const daily = forecast.daily.time.slice(0, 5).map((time, index) => ({
-    date: time,
-    weatherCode: forecast.daily.weather_code[index],
-    maxTemp: forecast.daily.temperature_2m_max[index],
-    minTemp: forecast.daily.temperature_2m_min[index],
-    precipitationChance: forecast.daily.precipitation_probability_max[index],
-  }));
-
-  return {
-    location: {
-      displayName: [match.name, match.admin1, match.country].filter(Boolean).join(", "),
-      latitude: match.latitude,
-      longitude: match.longitude,
-      timezone: match.timezone,
-    },
-    current: forecast.current,
-    daily,
-  };
+function resolveCityKey(value: string): string {
+  const normalized = value.trim().toLowerCase();
+  if (normalized.includes("seattle")) return "seattle";
+  if (normalized.includes("austin")) return "austin";
+  return DEFAULT_CITY_KEY;
 }
 
 export default function Home() {
   const [query, setQuery] = useState("Chicago");
-  const [submittedQuery, setSubmittedQuery] = useState("Chicago");
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [cityKey, setCityKey] = useState(DEFAULT_CITY_KEY);
+  const [loading, setLoading] = useState(false);
 
-  const currentSummary = useMemo(() => {
-    if (!weather) return null;
-    return getWeatherLabel(weather.current.weather_code);
-  }, [weather]);
+  const weather = useMemo(() => MOCK_WEATHER[cityKey], [cityKey]);
+  const minLow = Math.min(...weather.daily.map((day) => day.low));
+  const maxHigh = Math.max(...weather.daily.map((day) => day.high));
 
-  async function handleSearch(event: FormEvent<HTMLFormElement>) {
+  async function onSearchSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    setLoading(true);
 
-    const city = query.trim();
-    if (!city) {
-      setError("Please enter a city.");
-      return;
-    }
-
-    setSubmittedQuery(city);
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      const result = await fetchWeatherByCity(city);
-      setWeather(result);
-    } catch (fetchError) {
-      const message = fetchError instanceof Error ? fetchError.message : "Unexpected error.";
-      setError(message);
-      setWeather(null);
-    } finally {
-      setIsLoading(false);
-    }
+    const resolved = resolveCityKey(query);
+    await new Promise((resolve) => setTimeout(resolve, 380));
+    setCityKey(resolved);
+    setLoading(false);
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-10 sm:px-8">
-      <header className="rounded-3xl border border-cyan-200 bg-[linear-gradient(120deg,#0f172a,#0ea5e9)] px-6 py-8 text-slate-50 shadow-xl sm:px-10">
-        <p className="text-sm uppercase tracking-[0.16em] text-cyan-200">Weather App Next.js</p>
-        <h1 className="mt-3 text-3xl font-semibold sm:text-4xl">Forecast search with static export support</h1>
-        <p className="mt-3 max-w-2xl text-sm text-cyan-100 sm:text-base">
-          Search by city to load current conditions and a five-day outlook from Open-Meteo.
-        </p>
+    <main className="weather-screen">
+      <div className="weather-aurora weather-aurora-top" />
+      <div className="weather-aurora weather-aurora-bottom" />
 
-        <form onSubmit={handleSearch} className="mt-6 flex flex-col gap-3 sm:flex-row">
+      <section className="glass-card search-card">
+        <form onSubmit={onSearchSubmit} className="search-row">
+          <span className="search-icon" aria-hidden>
+            ⌕
+          </span>
           <input
-            type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search city (e.g. Denver, Austin, Berlin)"
-            className="h-12 w-full rounded-xl border border-cyan-300/50 bg-white px-4 text-slate-900 outline-none ring-cyan-200 transition focus:ring-2"
-            aria-label="City search"
+            placeholder="Search for a city"
+            aria-label="Search for city"
           />
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="h-12 rounded-xl bg-slate-900 px-5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {isLoading ? "Loading..." : "Search"}
+          <button type="submit" disabled={loading}>
+            {loading ? "Loading" : "Search"}
           </button>
         </form>
-      </header>
-
-      <section className="grid gap-5 md:grid-cols-[1.1fr_0.9fr]">
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Current Conditions</p>
-          {weather ? (
-            <>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">{weather.location.displayName}</h2>
-              <p className="mt-1 text-sm text-slate-600">{weather.location.timezone}</p>
-
-              <div className="mt-5 grid gap-4 sm:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Temperature</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">{Math.round(weather.current.temperature_2m)}°F</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Feels Like</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">{Math.round(weather.current.apparent_temperature)}°F</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Humidity</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">{weather.current.relative_humidity_2m}%</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs uppercase tracking-[0.12em] text-slate-500">Wind Speed</p>
-                  <p className="mt-2 text-3xl font-semibold text-slate-900">{Math.round(weather.current.wind_speed_10m)} mph</p>
-                </div>
-              </div>
-            </>
-          ) : (
-            <p className="mt-5 text-slate-600">Search for a city to load weather details.</p>
-          )}
-        </article>
-
-        <article className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-          <p className="text-xs uppercase tracking-[0.14em] text-slate-500">Status</p>
-          <h3 className="mt-2 text-xl font-semibold text-slate-900">
-            {isLoading ? "Fetching latest forecast..." : currentSummary ?? "Waiting for search"}
-          </h3>
-          <p className="mt-2 text-sm text-slate-600">Request: {submittedQuery}</p>
-          {error ? <p className="mt-4 rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{error}</p> : null}
-          {!error && weather ? (
-            <p className="mt-4 rounded-lg bg-cyan-50 p-3 text-sm text-cyan-800">
-              Coordinates: {weather.location.latitude.toFixed(3)}, {weather.location.longitude.toFixed(3)}
-            </p>
-          ) : null}
-        </article>
       </section>
 
-      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-xs uppercase tracking-[0.14em] text-slate-500">5-Day Forecast</p>
-        {weather ? (
-          <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            {weather.daily.map((day) => (
-              <article key={day.date} className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-sm font-semibold text-slate-900">{formatWeekday(day.date)}</p>
-                <p className="mt-1 text-sm text-slate-600">{getWeatherLabel(day.weatherCode)}</p>
-                <p className="mt-3 text-sm text-slate-700">High: {Math.round(day.maxTemp)}°F</p>
-                <p className="text-sm text-slate-700">Low: {Math.round(day.minTemp)}°F</p>
-                <p className="mt-2 text-xs uppercase tracking-[0.1em] text-slate-500">
-                  Rain chance {day.precipitationChance}%
-                </p>
+      <section className="hero-panel glass-card">
+        <p className="hero-city">{weather.city}</p>
+        <p className="hero-temp">{weather.temp}°</p>
+        <p className="hero-condition">{weather.condition}</p>
+        <p className="hero-range">H:{weather.high}°  L:{weather.low}°</p>
+      </section>
+
+      <section className="glass-card panel">
+        <h2>Hourly Forecast</h2>
+        <div className="hourly-scroll">
+          {weather.hourly.map((hour) => (
+            <article key={hour.hour} className="hourly-item">
+              <p>{hour.hour}</p>
+              <p className="hourly-icon">{hour.icon}</p>
+              {hour.rain ? <p className="rain">{hour.rain}%</p> : <p className="rain rain-hidden">0%</p>}
+              <p className="hourly-temp">{hour.temp}°</p>
+            </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="glass-card panel">
+        <h2>10-Day Forecast</h2>
+        <div className="daily-list">
+          {weather.daily.map((day) => {
+            const left = ((day.low - minLow) / (maxHigh - minLow || 1)) * 100;
+            const width = ((day.high - day.low) / (maxHigh - minLow || 1)) * 100;
+
+            return (
+              <article key={`${day.day}-${day.low}-${day.high}`} className="daily-row">
+                <p className="daily-day">{day.day}</p>
+                <p className="daily-icon">{day.icon}</p>
+                <p className="daily-rain">{day.rain}%</p>
+                <p className="daily-low">{day.low}°</p>
+                <div className="daily-bar-track">
+                  <span className="daily-bar-range" style={{ left: `${left}%`, width: `${Math.max(width, 8)}%` }} />
+                </div>
+                <p className="daily-high">{day.high}°</p>
               </article>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-4 text-slate-600">Forecast cards appear after a successful search.</p>
-        )}
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="details-grid">
+        {weather.details.map((detail) => (
+          <article key={detail.label} className="glass-card detail-tile">
+            <p className="detail-label">{detail.label}</p>
+            <p className="detail-value">{detail.value}</p>
+            <p className="detail-helper">{detail.helper}</p>
+          </article>
+        ))}
+      </section>
+
+      <section className="glass-card panel">
+        <h2>Saved Cities</h2>
+        <div className="city-chip-row">
+          {Object.values(MOCK_WEATHER).map((city) => (
+            <button key={city.city} className="city-chip" onClick={() => setCityKey(resolveCityKey(city.city))}>
+              <span>{city.city}</span>
+              <span>{city.temp}°</span>
+            </button>
+          ))}
+        </div>
       </section>
     </main>
   );
