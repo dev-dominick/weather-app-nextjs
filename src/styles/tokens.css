@@ -1,0 +1,14 @@
+@theme {
+  --color-weather-canvas: #0b2344;
+  --color-weather-canvas-night: #09162d;
+  --color-weather-foreground: #f3f8ff;
+  --color-weather-muted: #b9d0ee;
+  --color-weather-surface: rgb(17 43 79 / 52%);
+  --color-weather-surface-elevated: rgb(13 36 67 / 72%);
+  --color-weather-border: rgb(167 201 240 / 34%);
+  --color-weather-accent: #78d7ff;
+  --color-weather-accent-foreground: #06213d;
+  --radius-weather-xl: 1.5rem;
+  --radius-weather-md: 0.9rem;
+  --shadow-weather-card: 0 20px 48px rgb(3 11 22 / 45%);
+}
