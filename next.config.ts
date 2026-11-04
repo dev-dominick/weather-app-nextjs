@@ -2,11 +2,8 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   output: "export",
-  images: {
-    unoptimized: true,
-  },
-  basePath: "/weather-app-nextjs",
   trailingSlash: true,
+  images: { unoptimized: true },
 };
 
 export default nextConfig;
